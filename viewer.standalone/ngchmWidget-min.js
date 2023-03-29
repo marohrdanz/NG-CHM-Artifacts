@@ -975,4 +975,4 @@ f.style.display="none";a.style.display="none";c.style.display=""},loadAllTilesTi
 NgChm.createNS("NgChm.API",a);var d=NgChm.importNS("NgChm.UTIL"),c=NgChm.importNS("NgChm.MAPREP"),u=NgChm.importNS("NgChm.MMGR"),q=NgChm.importNS("NgChm.SUM"),h=NgChm.importNS("NgChm.Pane");NgChm.importNS("NgChm.DEV");var t=NgChm.importNS("NgChm.PDF"),r=NgChm.importNS("NgChm.LNK");NgChm.exportToNS("NgChm.API",{b64toBlob:d.b64toBlob,jsPDF:function(a){for(var b=[],c=0;c<arguments.length;++c)b[c-0]=arguments[c];return jspdf.jsPDF.apply(null,b)},generatePDF:t.openPdfPrefs,chmResize:function(){return h.resizeNGCHM()}});
 Object.assign(d,a);document.getElementById("menuPng").onclick=function(a){f(a.target)}})();
 document.body.addEventListener('click', NgChm.UHM.closeMenu,true);
-/* commit hash: 0c1fe2a */
+/* commit hash: 458c2ee */
