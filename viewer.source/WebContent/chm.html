@@ -13,13 +13,13 @@
 	<body class="NgChmViewer" style="font-family: sans-serif; font-size: 100%">
 		    <!--  <a href="javascript:alert(document.compatMode);">What mode am I?</a>   -->
 		    <div class="mdaServiceHeader" id="mdaServiceHeader">
-			<button id='messageOpen_btn' class='red' style="display: none;" data-tool-tip='Display Startup Warnings'>
+			<button id='messageOpen_btn' class='red' style="display: none;" data-tooltip='Display Startup Warnings'>
 			    <svg width="1em" height="1em"><use href="icons.svg#icon-exclamation-circle"/></svg>
 			</button>
 		        <div id="mda_header" class="mdaServiceHeaderLogo">
 			<!-- WIDGET EXCLUDE This section removed by widget compiler -->
-			    <a href="https://www.mdanderson.org/education-and-research/departments-programs-and-labs/departments-and-divisions/bioinformatics-and-computational-biology/index.html"  target="_blank">
-				<img id="mdaLogo" src="images/mdabcblogo262x108.png" width="131" height="54" alt="MD Anderson logo"/>
+			    <a href="https://bioinformatics.mdanderson.org/public-software/ngchm/"  target="_blank">
+				<img id="ngchmLogo" src="images/NG-CHM-logo-230-x-108.png" width="115" height="54" alt="NG-CHM logo"/>
 			    </a>
 			<!-- WIDGET INCLUDE -->
 			</div>
@@ -231,6 +231,7 @@
 			</div>
 			<div id="pdfPrefs" class="hide">
 			    <div class="prefsHdr" id="pdfPrefsHdr"><span>PDF Generation</span></div>
+			    <div>
 				<table id="pdfPrefsTable">
 					<tbody>
 						<tr class="chmTblRow">
@@ -305,16 +306,18 @@
 						</tr>
 					</tbody>
 				</table>
+			    </div>
 			</div>
 
 			<div id="msgBox" style="display: none; position: absolute;">
 				<div class="msgBoxHdr" id="msgBoxHdr"></div>
+				<div class="msgBoxBody">
 				<table>
 					<tbody>
 						<tr class="chmTblRow">
 							<td>
 							        <!-- WIDGET EXCLUDE -->
-								<div id="ngchmLogos" style="display: none">
+								<div id="aboutLogos" style="display: none">
 									<div class="mdaServiceHeaderLogo" style="right:5px;top:40px">
 										<a href="https://www.mdanderson.org/education-and-research/departments-programs-and-labs/departments-and-divisions/bioinformatics-and-computational-biology/index.html"  target="_blank">
 										    <img id="msgBoxMdaLogo" src="images/mdabcblogo262x108.png" alt="MD Anderson logo"/>
@@ -337,6 +340,7 @@
 						</tr>
 					</tbody>
 				</table>
+			    </div>
 			</div>
 
 			<template id="msgBoxTemplate" style="display: none; position: absolute;">
@@ -348,7 +352,7 @@
 							<td>
 							    <div>
 							        <!-- WIDGET EXCLUDE -->
-								<div class="ngchmLogos" style="display: none">
+								<div class="aboutLogos" style="display: none">
 									<div class="msgBoxLogoLeft">
 										<a href="https://www.mdanderson.org/education-and-research/departments-programs-and-labs/departments-and-divisions/bioinformatics-and-computational-biology/index.html"  target="_blank">
 										    <img src="images/mdabcblogo262x108.png" alt="MD Anderson logo"/>
@@ -493,6 +497,7 @@
 		<script src="javascript/UserHelpManager.js"></script>
 		<script src="javascript/HeatMapRep.js"></script>
 		<script src="javascript/ColorMapManager.js"></script>
+                <script src="javascript/CreateWebLoader.js"></script> <!--PRESERVE closure compiler breaks this-->
 		<script src="javascript/MatrixManager.js"></script>
 		<script src="javascript/Dendrogram.js"></script>
 		<script src="javascript/SearchState.js"></script>

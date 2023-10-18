@@ -704,6 +704,16 @@
 			updatePaneHandlers (container, child1);
 		}
 
+		// Move data properties that were defined on the original pane (now the container)
+		// to the new first child.
+		const propsToMove = [ 'pluginName', 'title', 'intro', ];
+		propsToMove.forEach (prop => {
+		    if (prop in container.dataset) {
+			child1.dataset[prop] = container.dataset[prop];
+			delete container.dataset[prop];
+		    }
+		});
+
 		const nextSib = child1.nextSibling;
 		container.insertBefore (divider, nextSib);
 		if (debug) console.log({ m:'splitPane', vertical, height: container.clientHeight, width: container.clientWidth });
@@ -883,7 +893,7 @@
 		if (isPaneExpanded === true) {
 			menuItemDisabled ('Collapse');
 		} else if (collapsedPaneIdx >= 0) {
-			menuItem ('Expand', () => {
+			menuItem ('Uncollapse', () => {
 				collapsedPanes.splice(collapsedPaneIdx,1);
 				expandPane (findPaneLocation(icon));
 				const what = paneLoc.container.classList.contains('vertical') ? 'height' : 'width';

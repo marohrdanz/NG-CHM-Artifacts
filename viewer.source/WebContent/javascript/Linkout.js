@@ -259,7 +259,6 @@ var linkoutsVersion = 'undefined';
 	//this function goes through searchItems and returns the proper label type for linkout functions to use
 	LNK.getLabelsByType = function(axis, linkout){
 		var searchLabels;
-		var labelDataMatrix;
 		const heatMap = MMGR.getHeatMap();
 		var labels = axis == 'Row' ? heatMap.getRowLabels()["labels"] : axis == "Column" ? heatMap.getColLabels()['labels'] :
 			axis == "ColumnCovar" ? heatMap.getColClassificationConfigOrder() : axis == "RowCovar" ? heatMap.getRowClassificationConfigOrder() :
@@ -311,9 +310,6 @@ var linkoutsVersion = 'undefined';
 					    searchLabels["Column"] = heatMap.getAxisLabels("Column")["labels"];
 				    }
 				}
-				if (linkout.title === 'Download selected matrix data to file') {
-					labelDataMatrix = createMatrixData(heatMap, searchLabels);
-				}
 			}
 		} else { // if this linkout was added using addMatrixLinkout
 			searchLabels = {"Row" : [], "Column" : []};
@@ -355,86 +351,129 @@ var linkoutsVersion = 'undefined';
 		}
 	}
 
+	function downloadAllMatrixData (selectedLabels, axis) {
+	    const heatMap = MMGR.getHeatMap();
+	    const selection = {
+		rowLabels: MMGR.getActualLabels ('row'),
+		colLabels: MMGR.getActualLabels ('column'),
+		rowItems: null,
+		colItems: null,
+	    };
+	    selection.rowItems = selection.rowLabels.map((v,i) => i+1);
+	    selection.colItems = selection.colLabels.map((v,i) => i+1);
+	    createMatrixData (heatMap, selection);
+	}
 
-	function createMatrixData (heatMap, searchLabels) {
-		//console.log ({ m: 'LNK.createMatrixData', searchLabels});
-		const win = heatMap.getNewAccessWindow({
-		    layer: heatMap.getCurrentDL(),
-		    level: MAPREP.DETAIL_LEVEL,
-		    firstRow: 1,
-		    firstCol: 1,
-		    numRows: heatMap.getNumRows(MAPREP.DETAIL_LEVEL),
-		    numCols: heatMap.getNumColumns(MAPREP.DETAIL_LEVEL),
-		});
-		win.onready((win) => {
-		    createMatrixDataTsv(heatMap, win, searchLabels);
-		});
-	};
+	function downloadSelectedMatrixData (selectedLabels, axis) {
+	    const heatMap = MMGR.getHeatMap();
+	    const selection = {
+		rowLabels: selectedLabels.Row,
+		colLabels: selectedLabels.Column,
+		rowItems: getAxisItems ("Row"),
+		colItems: getAxisItems ("Column"),
+	    };
+	    createMatrixData (heatMap, selection);
+
+	    function getAxisItems (axis) {
+		const searchItems = SRCHSTATE.getAxisSearchResults (axis);
+		//Check to see if we need new searchItems because entire axis is selected by
+		//default of no items being selected on opposing axis, Otherwise, use
+		//searchItems selected.
+		if (searchItems.length > 0) {
+		    return searchItems;
+		} else  {
+		    return LNK.getEntireAxisSearchItems(selectedLabels,axis);
+		}
+	    }
+	}
 
 	//This function creates a two dimensional array which contains all of the row and
 	//column labels along with the data for a given selection
-	function createMatrixDataTsv (heatMap, accessWindow, searchLabels) {
-		var matrix = new Array();
+	function createMatrixData (heatMap, selection) {
+		const { labels: rowLabels, items: rowItems } = deGap (selection.rowLabels, selection.rowItems);
+		const { labels: colLabels, items: colItems } = deGap (selection.colLabels, selection.colItems);
+		const minCol = Math.min.apply (null, colItems);
+		const numCols = Math.max.apply (null, colItems) - minCol + 1;
 
-		let rowSearchItems = SRCHSTATE.getAxisSearchResults("Row");
-		//Check to see if we need new searchItems because entire axis is selected by 
-		//default of no items being selected on opposing axis, Otherwise, use
-		//searchItems selected.
-		if (rowSearchItems.length === 0) {
-			rowSearchItems = LNK.getEntireAxisSearchItems(searchLabels,"Row");
+		const matrix = new Array();
+		// Push column headers: empty field followed by column labels.
+		matrix.push ([""].concat(colLabels).join('\t')+'\n');
+
+		let accessWindow = null; // Hold onto accessWindow until next one created to ensure tiles stay in cache.
+		let canceled = false;
+
+		const warningSize = 1000000;
+		const warningShown = rowLabels.length * colLabels.length >= warningSize;
+
+		if (warningShown) {
+		    showDownloadWarning ();
+		} else {
+		    processRow(0);
 		}
-		let colSearchItems = SRCHSTATE.getAxisSearchResults("Column");
-		if (colSearchItems.length === 0) {
-			colSearchItems = LNK.getEntireAxisSearchItems(searchLabels,"Column");
+
+		function showDownloadWarning () {
+		    UHM.initMessageBox ();
+		    UHM.setMessageBoxHeader ('Large Download Notice');
+		    UHM.setMessageBoxText ("<br>The requested download is very large.  <span class='errorMessage'>It may exhaust the browser's memory and crash the window or the browser without warning.</span><br><br>");
+		    UHM.setMessageBoxButton ('cancel', { type: 'text', text: 'Cancel', tooltip: 'Cancel the download', disableOnClick: true, default: false }, () => {
+			canceled = true;
+			UHM.messageBoxCancel();
+		    });
+		    UHM.setMessageBoxButton ('go', { type: 'text', text: 'Proceed', tooltip: 'Continue the download', disableOnClick: true, default: true }, () => {
+			UHM.showMsgBoxProgressBar ();
+			processRow (0);
+		    });
+		    UHM.displayMessageBox();
 		}
-		
-		//Load up initial array with column headers
-		let matrixCtr = 0;
-		for (var j = 0; j < searchLabels["Row"].length+1; j++) {
-			//Skip any gaps in data (matrixCtr counts rows actually written to new matrix)
-			if (searchLabels["Row"][j] !== '') {
-				matrix[matrixCtr] = new Array();
-				if (j == 0) {
-					matrix[matrixCtr].push(" ");
-					for (var i = 0; i < searchLabels["Column"].length; i++) {
-						if (searchLabels["Column"][i] !== "") {
-							matrix[matrixCtr].push(searchLabels["Column"][i])
-						}
-					}
- 				}
-				matrixCtr++;
-			}
-		}
-		
-		//Load up an array containing data values for the selected data matrix
-		var dataMatrix = new Array();
-		rowSearchItems.forEach( x => {
-			colSearchItems.forEach( y => {
-				let matrixValue = accessWindow.getValue(x,y);
-				//Skip any values representing gaps in the heat map (minValues has been rounded down by 1)
-				if (matrixValue !== MAPREP.minValues-1) {
-					dataMatrix.push(matrixValue);
-				}
+
+		function processRow (row) {
+		    if (canceled) {
+			return;
+		    }
+		    if (warningShown) {
+			UHM.msgBoxProgressMeter (row / rowLabels.length);
+		    }
+		    if (row >= rowLabels.length) {
+			// All requested rows processed.  Make matrix available for download.
+			downloadSelectedData (heatMap, matrix, "Matrix", warningShown);
+		    } else {
+			const rowItem = rowItems[row];
+			// Get access window for this row and the columns requested.
+			accessWindow = heatMap.getNewAccessWindow({
+			    layer: heatMap.getCurrentDL(),
+			    level: MAPREP.DETAIL_LEVEL,
+			    firstRow: rowItem,
+			    firstCol: minCol,
+			    numRows: 1,
+			    numCols: numCols,
 			});
-		});
-		//Fill in the remainder of the matrix with labels from searchLabels and data from dataMatrix
-		var dataIdx = 0;
-		matrixCtr = 1;
-		for (var k = 1; k <= searchLabels["Row"].length; k++) {
-			//Skip row labels representing gaps in heat map
-			if (searchLabels["Row"][k-1] !== '') {
-				matrix[matrixCtr].push(searchLabels["Row"][k-1]);
-				for (var i = 1; i < searchLabels["Column"].length+1; i++) {
-					//Skip column labels representing gaps in heat map
-					if (searchLabels["Column"][i-1] !== '') {
-						matrix[matrixCtr].push(dataMatrix[dataIdx])
-						dataIdx++;
-					}
-				}
-				matrixCtr++;
-			}
+			accessWindow.onready((win) => {
+			    const rowValues = colItems.map (colItem => win.getValue (rowItem, colItem));
+			    matrix.push ([rowLabels[row]].concat(rowValues).join('\t') + '\n');
+			    processRow(row+1);
+			});
+		    }
 		}
-		downloadSelectedData (heatMap, matrix, "Matrix");
+
+
+		// Helper function:
+		// Remove gaps from labels and items.
+		// Gaps are indicated by an empty label ('').
+		function deGap (labels, items) {
+		    if (labels.length != items.length) {
+			console.error ('deGap: length mismatch between labels and items', labels, items);
+			return { labels: [], items: [], };
+		    }
+		    const newLabels = [];
+		    const newItems = [];
+		    for (let i = 0; i < labels.length; i++) {
+			if (labels[i] != '') {
+			    newLabels.push (labels[i]);
+			    newItems.push (items[i]);
+			}
+		    }
+		    return { labels: newLabels, items: newItems, };
+		}
 	};
 
 	//This function creates a temporary searchItems object array and
@@ -834,7 +873,8 @@ var linkoutsVersion = 'undefined';
 		LNK.addLinkout("Download covariate data for all rows", "RowCovar", linkouts.MULTI_SELECT, downloadEntireClassBar,null,0);
 		LNK.addLinkout("Download covariate data for selected rows", "RowCovar", linkouts.MULTI_SELECT, downloadPartialClassBar,null,1);
 		LNK.addLinkout("Copy selected labels to clipboard", "Matrix", linkouts.MULTI_SELECT,LNK.copySelectionToClipboard,null,0);
-		LNK.addLinkout("Download selected matrix data to file", "Matrix", linkouts.MULTI_SELECT,null,null,0);
+		LNK.addLinkout("Download all matrix data to file", "Matrix", LNK.EMPTY_SELECT, downloadAllMatrixData, null, 0);
+		LNK.addLinkout("Download selected matrix data to file", "Matrix", linkouts.MULTI_SELECT, downloadSelectedMatrixData, null, 0);
 		if (LNK.enableBuilderUploads) {
 		    LNK.addLinkout("Upload all NG-CHM data to builder", "Matrix", LNK.EMPTY_SELECT, uploadAllToBuilder, null, 0);
 		    LNK.addLinkout("Upload selected NG-CHM data to builder", "Matrix", linkouts.MULTI_SELECT, uploadSelectedToBuilder, null, 0);
@@ -873,7 +913,8 @@ var linkoutsVersion = 'undefined';
 		for (let i = 0; i < axisLabels.length; i++) {
 			covarData.push ([axisLabels[i]].concat(labels.map(lbl => classBars[lbl].values[i])));
 		}
-		downloadSelectedData (heatMap, covarData, covarAxis);
+		const rows = covarData.map (row => row.join('\t') + '\n');
+		downloadSelectedData (heatMap, rows, covarAxis, false);
 	}
 
 	function downloadPartialClassBar (labels, covarAxis) {
@@ -887,7 +928,8 @@ var linkoutsVersion = 'undefined';
 		for (let i = 0; i < axisLabels.length; i++) {
 			covarData.push ([axisLabels[i]].concat(labels.map(lbl => classBars[lbl].values[labelIndex[i]-1])));
 		}
-		downloadSelectedData (heatMap, covarData, covarAxis);
+		const rows = covarData.map (row => row.join('\t') + '\n');
+		downloadSelectedData (heatMap, rows, covarAxis, false);
 	}
 
 	LNK.copySelectionToClipboard = function(labels,axis){
@@ -1002,29 +1044,42 @@ var linkoutsVersion = 'undefined';
 	    }
 	}
 
-	// Data is a matrix: an array of arrays.
-	// Each element of data is a row.
-	// Each element of a row is a cell.
+	// Rows is an array of tab-separated row data.
 	// The first row should be column labels.
-	// The first cell in each row should be a row label.
-	function downloadSelectedData (heatMap, data, axis) {
-		let dataStr = "";
-		for (let i = 0; i < data.length; i++) {
-			const rowData = data[i].join('\t');
-			dataStr += rowData+"\n";
+	// The first field in each row should be a row label.
+	function downloadSelectedData (heatMap, rows, axis, warningShown) {
+		try {
+		    const fileName = heatMap.getMapInformation().name + "_" + axis + "_Data.tsv";
+		    download (fileName, rows, warningShown);
+		} catch (error) {
+		    console.error ('Matrix download is too large');
+		    if (warningShown) {
+			UHM.setMessageBoxHeader("Matrix Download Failed");
+			UHM.setMessageBoxText("<br>The Matrix download failed, probably because is was too large.<br>");
+		    }
 		}
-		const fileName = heatMap.getMapInformation().name + "_" + axis + "_Data.tsv";
-		download (fileName, dataStr);
 	}
 
-	function download(filename, text) {
-		var element = document.createElement('a');
-		element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
-		element.setAttribute('download', filename);
-		element.style.display = 'none';
-		document.body.appendChild(element);
-		element.click();
-		document.body.removeChild(element);
+	function download(filename, text, warningShown) {
+		const blob = new Blob (text, { type: 'text/plain' });
+		const reader = new FileReader();
+		reader.onerror = function (e) {
+		    console.error ('Failed to convert to data URL', e, reader);
+		    throw e;
+		};
+		reader.onload = function (e) {
+		    const element = document.createElement('a');
+		    element.setAttribute('href', reader.result);
+		    element.setAttribute('download', filename);
+		    element.style.display = 'none';
+		    document.body.appendChild(element);
+		    element.click();
+		    document.body.removeChild(element);
+		    if (warningShown) {
+			UHM.messageBoxCancel();
+		    }
+		};
+		reader.readAsDataURL (blob);
 	}
 
 	LNK.switchPaneToLinkouts = function switchPaneToLinkouts (loc) {
@@ -1927,7 +1982,7 @@ var linkoutsVersion = 'undefined';
 							UHM.systemMessage('Nothing to SHOW','To add to the selection: highlight labels on the appropriate axis of the NG-CHM and click "GRAB"');
 							return;
 						}
-						SRCH.clearAllAxisSearchItems (otherAxis);
+						SRCH.clearSearchItems (otherAxis);
 						SRCH.setAxisSearchResultsVec (otherAxis, sss[cid].data);
 						SRCH.redrawSearchResults ();
 					};
@@ -2083,7 +2138,7 @@ var linkoutsVersion = 'undefined';
 								UHM.systemMessage('Nothing to SHOW','To add to the selection: highlight labels on the appropriate axis of the NG-CHM and click "GRAB"');
 								return;
 							}
-							SRCH.clearAllAxisSearchItems (axisNameU);
+							SRCH.clearSearchItems (axisNameU);
 							SRCH.setAxisSearchResultsVec (axisNameU, sss[cid].data[idx]);
 							SRCH.redrawSearchResults ();
 						}

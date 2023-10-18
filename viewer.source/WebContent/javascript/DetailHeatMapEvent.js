@@ -745,13 +745,14 @@ DEV.handleSelectDrag = function (e) {
 	const startRow = Math.min(DEV.getRowFromLayerY(mapItem, coords.y),DEV.getRowFromLayerY(mapItem, mapItem.dragOffsetY));
 	const startCol = Math.min(DEV.getColFromLayerX(mapItem, coords.x),DEV.getColFromLayerX(mapItem, mapItem.dragOffsetX));
 	SRCH.clearSearch(e);
-	SRCH.setAxisSearchResults ("Row", startRow, endRow);
-	SRCH.setAxisSearchResults ("Column", startCol, endCol);
+	if (endRow > 0) SRCH.setAxisSearchResults ("Row", Math.max (1, startRow), endRow);
+	if (endCol > 0) SRCH.setAxisSearchResults ("Column", Math.max (1, startCol), endCol);
         SUM.drawSelectionMarks();
         SUM.drawTopItems();
         DET.updateDisplayedLabels();
         DET.drawSelections();
         SRCH.updateLinkoutSelections();
+	SRCH.showSearchResults();
     }
 }	
 
@@ -802,12 +803,12 @@ DEV.detailDataZoomIn = function (mapItem) {
 		}
 		if ((mode == 'RIBBONH') || (mode == 'RIBBONH_DETAIL')) {
 			mapItem.currentRow = row;
-			if (mode == 'RIBBONH_DETAIL') {
+			if (selectedStart != 0) {
 			    mapItem.selectedStart = selectedStart;
 			    mapItem.selectedStop = selectedStop;
 			}
 			DET.detailHRibbon(mapItem);
-			if (mode == 'RIBBONH_DETAIL') {
+			if (selectedStart != 0) {
 			    // Go back into 'full ribbon' mode
 			    DEV.detailDataZoomOut (mapItem);
 			    // Remove unwanted mode history
@@ -815,12 +816,12 @@ DEV.detailDataZoomIn = function (mapItem) {
 			}
 		} else if  ((mode == 'RIBBONV') || (mode == 'RIBBONV_DETAIL')) {
 			mapItem.currentCol = col;
-			if (mode == 'RIBBONV_DETAIL') {
+			if (selectedStart != 0) {
 			    mapItem.selectedStart = selectedStart;
 			    mapItem.selectedStop = selectedStop;
 			}
 			DET.detailVRibbon(mapItem);
-			if (mode == 'RIBBONV_DETAIL') {
+			if (selectedStart != 0) {
 			    // Go back into 'full ribbon' mode
 			    DEV.detailDataZoomOut (mapItem);
 			    // Remove unwanted mode history
