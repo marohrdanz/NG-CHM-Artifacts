@@ -1,2 +1,2 @@
-Build tag: 2.24.1-build-5
-Git hash: 668f8d56a83cfd8e6090ada7a152a2511ad96d90
+Build tag: 2.24.1-build-6
+Git hash: 6e038cbcdbef8d6068a424d651aa52a41294d671
