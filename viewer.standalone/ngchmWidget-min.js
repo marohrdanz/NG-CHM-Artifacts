@@ -891,4 +891,4 @@ X=document.createElement("a");da(G,200,200,X,function(u){X.setAttribute("href",u
 N),generatePDF:F.openPdfPrefs,chmResize:()=>n.resizeNGCHM()});Object.assign(q,a);document.getElementById("menuPng").onclick=function(N){ia(N.target)}})();
 document.body.addEventListener('click', NgChm.UHM.closeMenu,true);
 /* commit hash: 0816897d */
-/* build tag: main */
+/* build tag: v10 */

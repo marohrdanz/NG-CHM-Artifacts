@@ -1,2 +1,2 @@
-Build tag: 2.24.1-build-10
+Build tag: v10
 Git hash: 0816897d4d96d8b9a7f5743e78982b6d42b1e3ef
