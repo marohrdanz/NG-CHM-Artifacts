@@ -1,2 +1,2 @@
-Build tag: PR527
-Git hash: 7affa99b8e17d7fe8fd99bcf9eeec79f6aa74389
+Build tag: 2.24.4
+Git hash: 143d2ceb5015172d870e31481318ee24901067ca
