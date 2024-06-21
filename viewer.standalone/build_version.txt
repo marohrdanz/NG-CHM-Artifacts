@@ -1,2 +1,2 @@
-Build tag: 2.24.15-build-43
+Build tag: 2.24.15
 Git hash: ce2811424e6a3c15dba4c78be2565bc08eeb847d
