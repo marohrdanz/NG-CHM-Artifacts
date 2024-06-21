@@ -1,2 +1,2 @@
-Build tag: 2.24.11
-Git hash: c6e8cfbc8eb28e888c78c75ad8322266be1217fe
+Build tag: 2.24.12-build-40
+Git hash: 819bb0ddd18105d09eb80c5819f46b86fb993195
